@@ -16,13 +16,17 @@ export class BooksService {
 	) {}
 
 	async create(createBookDto: CreateBookDto): Promise<Book> {
-		const author = await this.authorRepository.findOne({ where: { id: createBookDto.author_id } });
+		const { author_id, genre_ids, ...bookData } = createBookDto;
+
+		const author = await this.authorRepository.findOne({ where: { id: author_id } });
 		if (!author) throw new NotFoundException('Author not found');
 
-		const genre = await this.genreRepository.findOne({ where: { id: createBookDto.genre_id } });
-		if (!genre) throw new NotFoundException('Genre not found');
+		const genre = await this.genreRepository.find({
+			where: genre_ids.map((id) => ({ id })),
+		});
+		if (!genre.length) throw new NotFoundException('No genre found');
 
-		const book = this.bookRepository.create({ ...createBookDto, author, genre });
+		const book = this.bookRepository.create({ ...bookData, author, genre });
 		return await this.bookRepository.save(book);
 	}
 
@@ -30,15 +34,22 @@ export class BooksService {
 		return await this.bookRepository.find({ relations: ['author', 'genre'] });
 	}
 
-	findOne(id: number) {
-		return `${id}`;
+	async findOne(id: string): Promise<Book | null> {
+		return await this.bookRepository.findOne({ where: { id } });
 	}
 
-	update(id: number, updateBookDto: UpdateBookDto) {
-		return `This action updates a #${id} book`;
+	async update(id: string, updateBookDto: UpdateBookDto): Promise<Book> {
+		const book = await this.bookRepository.findOne({ where: { id } });
+		if (!book) throw new NotFoundException('Book id not matched or found');
+
+		const updatedBook = this.bookRepository.merge(book, updateBookDto);
+		return updatedBook;
 	}
 
-	remove(id: number) {
-		return `This action removes a #${id} book`;
+	async remove(id: string) {
+		const deletedBook = await this.bookRepository.delete(id);
+		if (deletedBook) {
+			return `${id} deleted`;
+		}
 	}
 }

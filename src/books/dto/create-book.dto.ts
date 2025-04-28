@@ -1,4 +1,4 @@
-import { IsNotEmpty, IsNumber, IsString, IsUUID } from 'class-validator';
+import { IsArray, IsNotEmpty, IsNumber, IsString, IsUUID } from 'class-validator';
 
 export class CreateBookDto {
 	@IsString()
@@ -28,6 +28,7 @@ export class CreateBookDto {
 	@IsUUID()
 	author_id: string;
 
-	@IsUUID()
-	genre_id: string;
+	@IsArray()
+	@IsUUID('all', { each: true })
+	genre_ids: string[];
 }
